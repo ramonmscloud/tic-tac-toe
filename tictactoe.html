@@ -237,10 +237,8 @@
         const gameSection = document.getElementById('game-section');
         const boardElement = document.getElementById('board');
         let cells = [];
-        // Contenedor del mensaje de estado
         const statusMessageContainer = document.getElementById('status-message-container');
-        // Span para el texto del mensaje
-        const statusMessage = document.getElementById('status-message');
+        let statusMessage = document.getElementById('status-message'); // Declarar con let para reasignar
         const resetButton = document.getElementById('reset-button');
         const changePlayersButton = document.getElementById('change-players-button');
         const playerTurnElement = document.getElementById('player-turn');
@@ -250,10 +248,10 @@
         // --- Constantes ---
         const PLAYERS_STORAGE_KEY = 'ticTacToePlayers';
         const DEFAULT_IMAGE_URL = 'https://placehold.co/60x60/cccccc/ffffff?text=?';
-        const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
-        const RESIZE_MAX_WIDTH = 800; // Ancho máximo para redimensionar
-        const RESIZE_MAX_HEIGHT = 800; // Alto máximo para redimensionar
-        const RESIZE_QUALITY = 0.7; // Calidad JPEG (0.0 - 1.0)
+        const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+        const RESIZE_MAX_WIDTH = 800;
+        const RESIZE_MAX_HEIGHT = 800;
+        const RESIZE_QUALITY = 0.7;
 
         // --- Datos de Jugadores ---
         let availablePlayers = [];
@@ -374,7 +372,8 @@
             if (imageFile) {
                 if (imageFile.size > MAX_IMAGE_SIZE_BYTES) {
                     console.log(`Image too large (${(imageFile.size / 1024 / 1024).toFixed(2)} MB), resizing...`);
-                    alert(`La imagen es muy grande (${(imageFile.size / 1024 / 1024).toFixed(2)} MB), se intentará redimensionar.`);
+                    // No mostrar alert aquí, solo log
+                    // alert(`La imagen es muy grande (${(imageFile.size / 1024 / 1024).toFixed(2)} MB), se intentará redimensionar.`);
                     resizeImage(imageFile, RESIZE_MAX_WIDTH, RESIZE_MAX_HEIGHT, RESIZE_QUALITY, (resizedImageUrl) => {
                         if (resizedImageUrl) {
                             playerData.imageUrl = resizedImageUrl;
@@ -420,6 +419,7 @@
         // --- Funciones del Juego ---
 
         function showPlayerSelection() {
+            console.log("Showing player selection screen."); // Log
             gameSection.classList.add('hidden');
             playerSelectionSection.classList.remove('hidden');
             selectedPlayers = [];
@@ -505,6 +505,7 @@
 
         function updateSelectionState() {
              if (selectedPlayers.length === 2) {
+                console.log("Two players selected, enabling start button."); // Log
                 startGameButton.disabled = false;
                 selectionMessage.textContent = '¡Listo para empezar!';
                 selectionMessage.classList.remove('text-red-600');
@@ -512,6 +513,7 @@
                 selectedPlayers[0].symbol = 'X';
                 selectedPlayers[1].symbol = 'O';
             } else {
+                // console.log("Not enough players selected, disabling start button."); // Log (opcional)
                 startGameButton.disabled = true;
                 selectionMessage.textContent = `Selecciona ${2 - selectedPlayers.length} jugador(es) más`;
                 selectionMessage.classList.add('text-red-600');
@@ -520,31 +522,52 @@
         }
 
         function startGame() {
-            playerSelectionSection.classList.add('hidden');
-            gameSection.classList.remove('hidden');
-            isGameOver = false;
-            board = ['', '', '', '', '', '', '', '', ''];
-            currentPlayerIndex = 0;
-            // Limpiar mensaje de estado anterior (incluyendo imagen de ganador)
-            statusMessageContainer.innerHTML = '<span id="status-message"></span>';
-            // Reasignar statusMessage al nuevo span
-            statusMessage = document.getElementById('status-message');
+            console.log("startGame function called."); // Log
+            try { // Añadir try...catch para capturar errores dentro de startGame
+                playerSelectionSection.classList.add('hidden');
+                gameSection.classList.remove('hidden');
+                console.log("Toggled section visibility."); // Log
 
-            cells = Array.from(boardElement.querySelectorAll('.cell'));
-            cells.forEach(cell => {
-                cell.textContent = '';
-                cell.classList.remove('winning-cell', 'text-red-500', 'text-blue-500');
-                const newCell = cell.cloneNode(true);
-                cell.parentNode.replaceChild(newCell, cell);
-            });
-             cells = Array.from(boardElement.querySelectorAll('.cell'));
-             cells.forEach(cell => {
-                 cell.addEventListener('click', handleCellClick, { once: true });
-             });
-            updatePlayerTurnDisplay();
+                isGameOver = false;
+                board = ['', '', '', '', '', '', '', '', ''];
+                currentPlayerIndex = 0;
+
+                // Limpiar mensaje de estado anterior
+                statusMessageContainer.innerHTML = '<span id="status-message"></span>';
+                // Reasignar statusMessage al nuevo span
+                statusMessage = document.getElementById('status-message');
+                if (!statusMessage) { // Comprobar si se encontró el span
+                    console.error("Status message span not found after reset!");
+                    return; // Salir si hay un problema crítico
+                }
+                 console.log("Reset game state and status message."); // Log
+
+                // Limpiar y reasignar celdas y listeners
+                cells = Array.from(boardElement.querySelectorAll('.cell'));
+                cells.forEach(cell => {
+                    cell.textContent = '';
+                    cell.classList.remove('winning-cell', 'text-red-500', 'text-blue-500');
+                    const newCell = cell.cloneNode(true);
+                    cell.parentNode.replaceChild(newCell, cell);
+                });
+                 cells = Array.from(boardElement.querySelectorAll('.cell')); // Re-seleccionar las nuevas celdas
+                 cells.forEach(cell => {
+                     cell.addEventListener('click', handleCellClick, { once: true });
+                 });
+                 console.log("Reset board cells and added listeners."); // Log
+
+                updatePlayerTurnDisplay();
+                 console.log("Updated player turn display. Game started."); // Log
+             } catch (error) {
+                 console.error("Error during startGame:", error); // Capturar y mostrar cualquier error
+                 alert("Ocurrió un error al iniciar el juego. Revisa la consola para más detalles.");
+                 // Opcional: intentar volver a la pantalla de selección
+                 showPlayerSelection();
+             }
         }
 
         function handleCellClick(event) {
+            // console.log("Cell clicked:", event.target.dataset.index); // Log detallado (opcional)
             if (isGameOver) return;
             const clickedCell = event.target;
             const cellIndex = parseInt(clickedCell.dataset.index);
@@ -568,13 +591,23 @@
         }
 
         function updatePlayerTurnDisplay() {
-            if (selectedPlayers.length < 2) return;
+            if (selectedPlayers.length < 2) {
+                console.warn("updatePlayerTurnDisplay called with less than 2 players selected.");
+                return;
+            };
             const currentPlayer = selectedPlayers[currentPlayerIndex];
+            if (!currentPlayer) {
+                 console.error("Current player is undefined in updatePlayerTurnDisplay.");
+                 return;
+            }
             currentPlayerName.textContent = currentPlayer.name;
             currentPlayerImage.src = currentPlayer.imageUrl || DEFAULT_IMAGE_URL;
             currentPlayerImage.alt = `Imagen de ${currentPlayer.name}`;
             currentPlayerImage.onerror = function() { this.src = DEFAULT_IMAGE_URL; };
+            // Asegurarse de que solo la imagen actual tenga la clase 'active'
+            document.querySelectorAll('.player-image.active').forEach(img => img.classList.remove('active'));
             currentPlayerImage.classList.add('active');
+             // console.log("Updated player turn display for:", currentPlayer.name); // Log detallado (opcional)
         }
 
         function checkWin(symbol) {
@@ -586,16 +619,20 @@
             });
              if (hasWon && winningCombination) {
                  winningCombination.forEach(index => {
-                     cells[index].classList.add('winning-cell');
+                    // Asegurarse de que la celda existe antes de añadir la clase
+                    if (cells[index]) {
+                         cells[index].classList.add('winning-cell');
+                    } else {
+                        console.error(`Cell with index ${index} not found in checkWin.`);
+                    }
                  });
              }
             return hasWon;
         }
 
-        // Modificada para mostrar imagen del ganador
         function endGame(isDraw) {
+            console.log(`Game ended. Draw: ${isDraw}`); // Log
             isGameOver = true;
-             // Limpiar contenido anterior del contenedor del mensaje
              statusMessageContainer.innerHTML = '';
 
             if (isDraw) {
@@ -605,53 +642,87 @@
 
             } else {
                 const winner = selectedPlayers[currentPlayerIndex];
+                 if (!winner) {
+                     console.error("Winner is undefined in endGame.");
+                     statusMessageContainer.textContent = "Error: No se pudo determinar el ganador.";
+                     return;
+                 }
 
-                // Crear imagen del ganador
                 const winnerImg = document.createElement('img');
                 winnerImg.src = winner.imageUrl || DEFAULT_IMAGE_URL;
                 winnerImg.alt = `Icono de ${winner.name}`;
-                winnerImg.classList.add('winner-image'); // Aplicar estilo CSS
-                 winnerImg.onerror = function() { this.src = DEFAULT_IMAGE_URL; }; // Fallback
+                winnerImg.classList.add('winner-image');
+                 winnerImg.onerror = function() { this.src = DEFAULT_IMAGE_URL; };
 
-                // Crear span para el texto
                  const textSpan = document.createElement('span');
                  textSpan.textContent = `¡${winner.name} (${winner.symbol}) ha ganado!`;
 
-                 // Añadir imagen y texto al contenedor
                  statusMessageContainer.appendChild(winnerImg);
                  statusMessageContainer.appendChild(textSpan);
             }
-             currentPlayerImage.classList.remove('active'); // Quitar borde activo de la imagen del turno
+             // Quitar clase 'active' de la imagen del turno
+             if (currentPlayerImage) {
+                currentPlayerImage.classList.remove('active');
+             } else {
+                 console.warn("currentPlayerImage element not found in endGame.");
+             }
         }
 
         function resetGame() {
+             console.log("Reset button clicked."); // Log
             startGame();
         }
 
         // --- Inicialización ---
         document.addEventListener('DOMContentLoaded', () => {
-            loadPlayersFromStorage();
-            showPlayerSelection();
+             console.log("DOM fully loaded and parsed."); // Log
+            try { // Envolver inicialización en try...catch
+                loadPlayersFromStorage();
+                showPlayerSelection();
 
-            addPlayerForm.addEventListener('submit', handleAddPlayer);
+                // Asegurarse de que los elementos existen antes de añadir listeners
+                if (addPlayerForm) {
+                    addPlayerForm.addEventListener('submit', handleAddPlayer);
+                } else { console.error("Add player form not found!"); }
 
-            newPlayerImageFileInput.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    fileNameDisplay.textContent = file.name;
-                } else {
-                    fileNameDisplay.textContent = '';
-                }
-            });
+                if (newPlayerImageFileInput) {
+                    newPlayerImageFileInput.addEventListener('change', (event) => {
+                        const file = event.target.files[0];
+                        if (file && fileNameDisplay) {
+                            fileNameDisplay.textContent = file.name;
+                        } else if (fileNameDisplay) {
+                            fileNameDisplay.textContent = '';
+                        }
+                    });
+                } else { console.error("Player image file input not found!"); }
 
-            startGameButton.addEventListener('click', () => {
-                if (selectedPlayers.length === 2) {
-                    startGame();
-                }
-            });
+                if (startGameButton) {
+                    startGameButton.addEventListener('click', () => {
+                         console.log("Start game button clicked. Selected players:", selectedPlayers.length); // Log
+                        if (startGameButton.disabled) {
+                             console.warn("Start button clicked but is disabled.");
+                             return;
+                        }
+                        if (selectedPlayers.length === 2) {
+                            startGame();
+                        } else {
+                             console.warn("Start button clicked but selectedPlayers.length is not 2.");
+                        }
+                    });
+                } else { console.error("Start game button not found!"); }
 
-            resetButton.addEventListener('click', resetGame);
-            changePlayersButton.addEventListener('click', showPlayerSelection);
+                if (resetButton) {
+                    resetButton.addEventListener('click', resetGame);
+                } else { console.error("Reset button not found!"); }
+
+                if (changePlayersButton) {
+                    changePlayersButton.addEventListener('click', showPlayerSelection);
+                } else { console.error("Change players button not found!"); }
+
+             } catch (error) {
+                 console.error("Error during DOMContentLoaded initialization:", error);
+                 alert("Ocurrió un error al inicializar la página. Revisa la consola.");
+             }
         });
 
     </script>
